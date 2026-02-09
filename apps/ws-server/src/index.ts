@@ -1,5 +1,6 @@
 import {WebSocketServer} from 'ws';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { JWT_SECRET } from "@repo/backend-common/config";
 
 const wss = new WebSocketServer({port: 8080});
 
@@ -15,7 +16,7 @@ wss.on("connection",(socket,request)=>{
         return;
     }
 
-    const decoded = jwt.verify(token, "secretkey");
+    const decoded = jwt.verify(token, JWT_SECRET);
    
     if(!(decoded as JwtPayload).userId){
         socket.send("Unauthorized");
