@@ -1,6 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import authMiddleware from "./middlewares/auth";
+import { prisma } from "@repo/db/lib/prisma.js";
 //@ts-ignore
 import { createRoomSchema, authSchema } from "@repo/common/schema";
 //@ts-ignore
@@ -14,32 +15,45 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.post("/signup", (req, res) => {
+app.post("/signup", async (req, res) => {
   const { success, data } = authSchema.safeParse(req.body);
   if (!success) {
     return res.status(400).json({ error: data.errors });
   }
 
-  const username = data.username;
-  const password = data.password;
-
-  //database logic to create user
+  const username = data.username as string;
+  const email = data.email as string;
+  const password = data.password as string;
+  await prisma.user.create({
+    data: {
+      username,
+      password,
+      email,
+    },
+  });
 
   res.send("Signup done");
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { success, data } = authSchema.safeParse(req.body);
   if (!success) {
     return res.status(400).json({ error: data.errors });
   }
 
   const username = data.username;
-  const password = data.password;
+  const password = data.password as string;
 
   //database validation logic to check user credentials
 
-  const userId = "123"; // This should be the actual user ID from the database
+  const user = await prisma.user.findUnique({
+    where: {
+      username,
+      password,
+    },
+  });
+
+  const userId = user?.id; // This should be the actual user ID from the database
   const token = jwt.sign({ userId }, JWT_SECRET);
   res.json({ token });
 });
