@@ -15,6 +15,6 @@ export default function authMiddleware(req:Request, res:Response, next:NextFunct
         return res.status(401).json({ message: "Invalid token" });
     }
     //@ts-ignore
-    req.username = decoded.username;
+    req.userId = decoded.userId;
     next();
 }

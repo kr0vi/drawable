@@ -46,19 +46,21 @@ app.post("/login", async (req, res) => {
 
   //database validation logic to check user credentials
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.user.findFirst({
     where: {
       username,
       password,
     },
   });
-
+  if (!user) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
   const userId = user?.id; // This should be the actual user ID from the database
   const token = jwt.sign({ userId }, JWT_SECRET);
   res.json({ token });
 });
 
-app.post("/room", authMiddleware, (req, res) => {
+app.post("/room", authMiddleware, async (req, res) => {
   const { success, data } = createRoomSchema.safeParse(req.body);
   if (!success) {
     return res.status(400).json({ error: data.errors });
@@ -67,8 +69,19 @@ app.post("/room", authMiddleware, (req, res) => {
   const name = data.name;
 
   //database logic to create room
-
-  res.send("Room endpoint");
+  try {
+    const room = await prisma.rooms.create({
+      data: {
+        slug: name,
+        //@ts-ignore
+        adminId: req.userId, // Assuming you have the userId from the authenticated user
+      },
+    });
+    res.send({ roomId: room.id, slug: room.slug });
+  } catch (error) {
+    console.error("Error duplicate room:", error);
+    return res.status(500).json({ error: "error duplicate room" });
+  }
 });
 
 app.listen(3000, () => {
